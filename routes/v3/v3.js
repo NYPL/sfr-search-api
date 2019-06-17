@@ -3,8 +3,7 @@ const elasticsearch = require('elasticsearch')
 const logger = require('../../lib/logger')
 const pjson = require('../../package.json')
 const { searchEndpoints } = require('./search')
-
-const OPDS_TYPE = 'application/opds+json'
+const { Manifest } = require('../../lib/opdsManifest')
 
 // Create an instance of an Express router to handle requests to v2 of the API
 const v3Router = express.Router()
@@ -21,27 +20,14 @@ v3Router.client = new elasticsearch.Client({
 v3Router.get('/', (req, res) => {
   res.send({
     codeVersion: pjson.version,
-    apiVersion: 'v3-dev',
+    apiVersion: process.env.API_VERSIOn,
   })
 })
 
 v3Router.get('/opds', (req, res) => {
-  res.send({
-    metadata: { title: 'ResearchNow: Open Source & Public Domain eBooks' },
-    links: [
-      {
-        rel: 'self',
-        href: getCurrentUrl(req),
-        type: OPDS_TYPE,
-      },
-      {
-        rel: 'search',
-        href: '/search{?query}',
-        type: OPDS_TYPE,
-        templated: true,
-      },
-    ],
-  })
+  const rootManifest = new Manifest('ResearchNow: Open Source & Public Domain eBooks')
+  rootManifest.addLink('self', Manifest.getCurrentUrl(req), process.env.OPDS_TYPE)
+  res.send(rootManifest.generateManifest())
 })
 
 /**
@@ -88,10 +74,6 @@ const handleError = (res, error) => {
     error: error.message ? error.message : error,
   })
   return false
-}
-
-const getCurrentUrl = (req) => {
-  return `${req.protocol}://${req.get('host')}${req.originalUrl}`
 }
 
 searchEndpoints(v3Router, respond, handleError)
