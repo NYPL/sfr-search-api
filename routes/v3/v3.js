@@ -21,7 +21,7 @@ v3Router.client = new elasticsearch.Client({
 v3Router.get('/', (req, res) => {
   res.send({
     codeVersion: pjson.version,
-    apiVersion: 'v3',
+    apiVersion: 'v3-dev',
   })
 })
 
@@ -36,7 +36,7 @@ v3Router.get('/opds', (req, res) => {
       },
       {
         rel: 'search',
-        href: '/search{?query,author,title,subject}',
+        href: '/search{?query}',
         type: OPDS_TYPE,
         templated: true,
       },

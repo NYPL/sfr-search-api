@@ -30,7 +30,7 @@ app.all('*', (req, res, next) => {
 // altered at a future point.
 // Further, old/deprecated versions can eventually be disabled.
 
-app.use('/v3', v3Router)
+app.use('/v3-dev', v3Router)
 app.use('/v2', v2Router)
 app.use('/v1', v1Router)
 app.use('/', v1Router) // Controls default version of app
