@@ -3,6 +3,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const SwaggerParser = require('swagger-parser')
 const logger = require('./lib/logger')
+const { handleError, NotFoundError } = require('./lib/errors')
 const swaggerDocs = require('./swagger.v2.json')
 
 require('dotenv').config()
@@ -45,6 +46,11 @@ app.get('/research-now/swagger-test', (req, res) => {
     if (err) res.send(err)
     else res.send(`API name: ${api.info.title}, Version: ${api.info.version}`)
   })
+})
+
+app.all('*', (req, res) => {
+  app.logger.error(`Received invalid request ${req.url}`)
+  handleError(res, new NotFoundError('Endpoint does not exist. See project documentation or site root for available endpoints'))
 })
 
 const port = process.env.PORT || config.port

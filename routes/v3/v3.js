@@ -1,8 +1,10 @@
 const express = require('express')
 const elasticsearch = require('elasticsearch')
 const logger = require('../../lib/logger')
+const { handleError, InvalidRequestError } = require('../../lib/errors')
 const pjson = require('../../package.json')
 const { searchEndpoints } = require('./search')
+const { workEndpoints } = require('./work')
 const { Manifest } = require('../../lib/opdsManifest')
 
 // Create an instance of an Express router to handle requests to v2 of the API
@@ -30,6 +32,11 @@ v3Router.get('/opds', (req, res) => {
   res.send(rootManifest.generateManifest())
 })
 
+v3Router.post('/opds/*', (req, res) => {
+  v3Router.logger.error('POST queries are not allowed')
+  handleError(res, new InvalidRequestError('Only GET requests are allowed for OPDS 2 queries'))
+})
+
 /**
  * Parses and returns the results of a query against the API.
  *
@@ -49,33 +56,7 @@ const respond = (res, _resp, params) => {
   return true
 }
 
-/**
- * Handle errors returned in the course of making a query.
- *
- * @param {Res} res An Express response object.
- * @param {Error} error An error received, to be parsed and returned as non-200 status.
- */
-const handleError = (res, error) => {
-  v3Router.logger.error('Resources#handleError:', error)
-  let statusCode = 500
-  switch (error.name) {
-    case 'InvalidParameterError':
-      statusCode = 422
-      break
-    case 'NotFoundError':
-      statusCode = 404
-      break
-    default:
-      statusCode = 500
-  }
-  res.status(statusCode).send({
-    status: statusCode,
-    name: error.name,
-    error: error.message ? error.message : error,
-  })
-  return false
-}
-
 searchEndpoints(v3Router, respond, handleError)
+workEndpoints(v3Router, respond, handleError)
 
 module.exports = { v3Router, respond, handleError }
