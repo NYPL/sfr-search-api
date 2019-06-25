@@ -92,4 +92,41 @@ describe('Testing ElasticSearch Integration', () => {
         expect(v2Mock.isDone()).to.be.true
       })
   })
+
+  it('responds to v3 search', async () => {
+    const v3Mock = nock(process.env.ELASTICSEARCH_HOST)
+      .post('/_count')
+      .reply(200, { count: 1 })
+      .post('/sfr_test/_search')
+      .reply(200, {
+        took: 0,
+        timed_out: false,
+        hits: {
+          total: 1,
+          max_score: 1,
+          hits: [
+            {
+              _index: 'sfr_test',
+              _type: 'test',
+              _id: 31,
+              _score: 1,
+              _source: {
+                instances: [],
+                title: 'Testing',
+              },
+            },
+          ],
+        },
+        aggregations: {},
+      })
+
+    req.get('/v3-dev/opds/search?query=the')
+      .then((resp) => {
+        expect(resp.body.publications.length).to.be.greaterThan(0)
+        // eslint-disable-next-line no-underscore-dangle
+        expect(resp.body.publications[0].metadata.title).to.equal('Testing')
+        // eslint-disable-next-line no-unused-expressions
+        expect(v3Mock.isDone()).to.be.true
+      })
+  })
 })

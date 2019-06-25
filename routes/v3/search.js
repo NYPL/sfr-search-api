@@ -42,4 +42,4 @@ const transformSearchOPDS = (req, resp) => {
   return searchManifest.generateManifest()
 }
 
-module.exports = { searchEndpoints }
+module.exports = { searchEndpoints, transformSearchOPDS }

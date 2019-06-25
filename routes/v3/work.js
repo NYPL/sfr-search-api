@@ -49,4 +49,4 @@ const transformWorkOPDS = (work, req) => {
   return pub.generateManifest()
 }
 
-module.exports = { fetchWork, workEndpoints }
+module.exports = { fetchWork, transformWorkOPDS, workEndpoints }
