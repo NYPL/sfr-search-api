@@ -9,6 +9,7 @@ chai.should()
 chai.use(sinonChai)
 const { expect } = chai
 
+const Helpers = require('../helpers/esSourceHelpers')
 const { Search } = require('../lib/search')
 const { MissingParamError } = require('../lib/errors')
 
@@ -55,11 +56,13 @@ describe('v2 simple search tests', () => {
     testSearch.query = {
       build: sinon.stub(),
     }
-    const editionRangeStub = sinon.stub(Search, 'formatResponseEditionRange')
+    const instanceFilter = sinon.stub(Search, 'filterSearchEditions')
+    const editionRangeStub = sinon.stub(Helpers, 'formatResponseEditionRange')
     const resp = await testSearch.execSearch()
     expect(resp.took).to.equal(0)
     expect(resp.hits.hits.length).to.equal(1)
     editionRangeStub.restore()
+    instanceFilter.restore()
   })
 
   it('should create facet object for response', (done) => {
@@ -104,87 +107,6 @@ describe('v2 simple search tests', () => {
     done()
   })
 
-  it('should return a year from an array of editions', (done) => {
-    const stubGetRange = sinon.stub(Search, 'getEditionRangeValue')
-    stubGetRange.onFirstCall().returns('1900')
-    stubGetRange.onSecondCall().returns('2000')
-    const testResp = {
-      took: 0,
-      timed_out: false,
-      hits: {
-        total: 1,
-        max_score: 1,
-        hits: [
-          {
-            _index: 'sfr_test',
-            _type: 'test',
-            _id: 1,
-            _score: 1,
-          },
-        ],
-      },
-    }
-    Search.formatResponseEditionRange(testResp)
-    expect(testResp.hits.hits[0].edition_range).to.equal('1900 - 2000')
-    stubGetRange.restore()
-    done()
-  })
-
-  it('should get a year for a provided set of editions', (done) => {
-    const stubCompare = sinon.stub(Search, 'startEndCompare')
-    const testHit = {
-      _source: {
-        instances: [
-          {
-            pub_date: {
-              gte: '2019-01-01',
-              lte: '2020-12-31',
-            },
-          }, {
-            pub_date: null,
-          },
-        ],
-      },
-    }
-
-    const testStart = Search.getEditionRangeValue(testHit, 'gte', 1)
-    const testEnd = Search.getEditionRangeValue(testHit, 'lte', -1)
-    expect(testStart).to.equal(2019)
-    expect(testEnd).to.equal(2020)
-    stubCompare.restore()
-    done()
-  })
-
-  it('should return ???? if no pub date found', (done) => {
-    const stubCompare = sinon.stub(Search, 'startEndCompare')
-    const testHit = {
-      _source: {
-        instances: [
-          {
-            pub_date: null,
-          },
-        ],
-      },
-    }
-
-    const testStart = Search.getEditionRangeValue(testHit, 'gte', 1)
-    const testEnd = Search.getEditionRangeValue(testHit, 'lte', -1)
-    expect(testStart).to.equal('????')
-    expect(testEnd).to.equal('????')
-    stubCompare.restore()
-    done()
-  })
-
-  it('should generate a comparison function for sorting', (done) => {
-    const compareFunction = Search.startEndCompare('gte', 1)
-    expect(compareFunction).to.be.instanceOf(Function)
-    const edition1 = { pub_date: { gte: '1999-01-01', lte: null } }
-    const edition2 = { pub_date: { gte: '2000-01-01', lte: null } }
-    const order = compareFunction(edition1, edition2)
-    expect(order).to.equal(-1)
-    done()
-  })
-
   it('should add gte/lte date filter on publication dates', (done) => {
     const testApp = sinon.mock()
     testApp.logger = logger
@@ -214,7 +136,7 @@ describe('v2 simple search tests', () => {
     done()
   })
 
-  it('should a title.keyword sort for a title sort option', (done) => {
+  it('should sort on sort_title for a title sort option', (done) => {
     const testApp = sinon.mock()
     const testParams = { sort: [{ field: 'title' }] }
     const testSearch = new Search(testApp, testParams)
@@ -222,8 +144,8 @@ describe('v2 simple search tests', () => {
     testSearch.addSort()
     testBody = testSearch.query.build()
     expect(testBody).to.have.property('sort')
-    expect(testBody.sort[0]).to.have.property('title.keyword')
-    expect(testBody.sort[0]['title.keyword'].order).to.equal('ASC')
+    expect(testBody.sort[0]).to.have.property('sort_title')
+    expect(testBody.sort[0].sort_title.order).to.equal('ASC')
     expect(testBody.sort[1]).to.have.property('uuid')
     done()
   })
@@ -251,6 +173,41 @@ describe('v2 simple search tests', () => {
     expect(testBody).to.have.property('sort')
     expect(testBody.sort[0]).to.have.property('_score')
     expect(testBody.sort[1]).to.have.property('uuid')
+    done()
+  })
+
+  it('should slice instance array down to first 3 instances', (done) => {
+    const testResp = {
+      took: 0,
+      timed_out: false,
+      hits: {
+        total: 1,
+        max_score: 1,
+        hits: [
+          {
+            _index: 'sfr_test',
+            _type: 'test',
+            _id: 1,
+            _score: 1,
+            _source: {
+              instances: [
+                { id: 1 },
+                { id: 2 },
+                { id: 3 },
+                { id: 4 },
+              ],
+            },
+          },
+        ],
+      },
+      aggregations: {},
+    }
+    Search.filterSearchEditions(testResp)
+    /* eslint-disable no-underscore-dangle */
+    expect(testResp.hits.hits[0]._source.instances.length).to.equal(3)
+    expect(testResp.hits.hits[0]._source.instances[2].id).to.equal(3)
+    expect(testResp.hits.hits[0]._source.edition_count).to.equal(4)
+    /* eslint-enable no-underscore-dangle */
     done()
   })
 })
