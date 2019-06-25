@@ -30,7 +30,7 @@ const transformSearchOPDS = (req, resp) => {
   const perPage = req.query.per_page ? req.query.per_page : 10
   const curPage = req.query.page ? req.query.page : 1
   const { total } = resp.hits
-  
+
   const searchManifest = new Manifest(`ResearchNow Search Results for: ${req.query.query}`)
   searchManifest.metadata.total = total
   searchManifest.metadata.itemsPerPage = perPage

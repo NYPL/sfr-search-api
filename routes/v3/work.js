@@ -21,7 +21,6 @@ const fetchWork = (params, app) => {
   }
 
   const { uuid } = params
-  console.log('UUID', params)
   const body = bodybuilder().orQuery('term', 'uuid', uuid)
 
   const esQuery = {
