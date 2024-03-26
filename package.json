@@ -11,7 +11,7 @@
         "config": "2.0.1",
         "dotenv": "6.1.0",
         "elasticsearch": "15.1.1",
-        "express": "4.16.4",
+        "express": "4.19.2",
         "request": "2.88.0",
         "swagger-client": "^3.8.22",
         "swagger-parser": "^6.0.2",
