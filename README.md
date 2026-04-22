@@ -1,3 +1,7 @@
+## Deprecated
+
+This repo has been deprecated in April 2026 in favor of https://github.com/NYPL/digital-research-books
+
 View Swagger documention for [v0.1](https://dev-platformdocs.nypl.org)
 
 ##Installing
